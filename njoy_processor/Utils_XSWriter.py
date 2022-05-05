@@ -47,6 +47,7 @@ def WriteChiTechFile(data, chi_full_path, problem_description):
     cf.write("# Output" + "\n")
     cf.write("NUM_GROUPS " + str(G) + "\n")
     cf.write("NUM_MOMENTS " + str(M) + "\n")
+    
     if J > 0:
         cf.write("NUM_PRECURSORS " + str(J) + "\n")
     cf.write("\n")

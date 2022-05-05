@@ -17,19 +17,23 @@ def Njoy_spectrum_plotter(outp, path):
       gamma_heating_spectrum[i] *= gamma_spectrum[i]
     #================================= Plot energy spectrum
     #================================= Flux
+    #neutron_spectrum = neutron_spectrum/np.sum(neutron_spectrum)  ### I added
     fig = plt.figure(figsize=(12,6), )
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     ax = fig.add_subplot(1, 2, 1)
     ax.semilogy(neutron_group_bndries, neutron_spectrum)
     ax.set_xlabel("Energy (MeV)")
     ax.set_ylabel("$\phi(E)$")
+    #ax.set_ylabel(r'$\frac{\phi(E)}{\Sigma \phi(E)}$')
     ax.grid('on')
     ax = fig.add_subplot(1, 2, 2)
     ax.loglog(neutron_group_bndries, neutron_spectrum)
     ax.set_xlabel("Energy (MeV)")
     ax.set_ylabel("$\phi(E)$")
+    #ax.set_ylabel(r'$\frac{\phi(E)}{\Sigma \phi(E)}$')
     ax.grid('on')
     plt.suptitle('neutron spectrum')
+    #plt.suptitle('normalized neutron spectrum')
     plt.savefig(path+'Neutron_spectrum.png')
 
     #================================= Heating XS

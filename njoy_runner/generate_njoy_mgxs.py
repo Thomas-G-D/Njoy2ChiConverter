@@ -575,7 +575,7 @@ njoy_input.close()
 # ===================================== Run NJOY
 # remove output file
 os.system('rm -f output')
-
+args.njoy_exec_name = 'njoy21' ########## I added look into this
 if args.njoy_exec_name == "njoy21":
     cmd_line = args.njoy_exec_name + " -i NJOY_INPUT.txt -o output"
 else:

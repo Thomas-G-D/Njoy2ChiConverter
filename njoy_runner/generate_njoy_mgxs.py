@@ -185,6 +185,7 @@ if args.path_to_neutron_endf != "":
   if not os.path.isfile(args.path_to_neutron_endf):
     print("Error: Value supplied to --path_to_neutron_endf does not "
           "point to an existing file.")
+    print(args.path_to_neutron_endf) ### mine
 
 if (args.neutron_group_structure == 1 and 
         args.custom_neutron_gs_file == ""):
@@ -577,13 +578,14 @@ njoy_input.close()
 os.system('rm -f output')
 args.njoy_exec_name = 'njoy21' ########## I added look into this
 if args.njoy_exec_name == "njoy21":
-    cmd_line = args.njoy_exec_name + " -i NJOY_INPUT.txt -o output"
+   # cmd_line = args.njoy_exec_name + " -i NJOY_INPUT.txt -o output"    #### I added the _2
+    cmd_line = args.njoy_exec_name + " -i NJOY_INPUT_10.txt -o output" 
 else:
     cmd_line = args.njoy_exec_name  + " < NJOY_INPUT.txt"
 print('command line =',cmd_line)
 
 os.system(cmd_line)
-os.system("rm tape*")
+#os.system("rm tape*")  ### I undid this 
 
 if not os.path.isdir(args.output_directory):
   print("Error: Value passed to --output_directory does not point to "

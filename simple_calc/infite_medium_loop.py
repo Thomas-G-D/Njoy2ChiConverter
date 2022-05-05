@@ -13,13 +13,14 @@ import Utils_Info
 import Utils_NjoySpectrumPlotter
 import matplotlib.pyplot as plt
 plt.close('all')
-Isotopes = ['Al27', 'Ar36', 'Ar38', 'Ar40', 'C12', 'Cr52', 'Cu63', 'Cu65', 'Fe56', 'H1', 'Mg24', 'Mg25', 'Mg26', 'Mn55', 'N14', 'N15',
-             'O16', 'O17', 'Si28', 'Si30', 'Ti48', 'Zn64', 'Zn66', 'Zn67', 'Zn68', 'Zn70', 'Cd106', 'Cd108', 'Cd110', 'Cd111', 'Cd112', 'Cd113', 'Cd114', 'Cd116']
+# Isotopes = ['Al27', 'Ar36', 'Ar38', 'Ar40', 'C12', 'Cr52', 'Cu63', 'Cu65', 'Fe56', 'H1', 'Mg24', 'Mg25', 'Mg26', 'Mn55', 'N14', 'N15',
+             # 'O16', 'O17', 'Si28', 'Si30', 'Ti48', 'Zn64', 'Zn66', 'Zn67', 'Zn68', 'Zn70', 'Cd106', 'Cd108', 'Cd110', 'Cd111', 'Cd112', 'Cd113', 'Cd114', 'Cd116']
+Isotopes = ['Al27']
+difference            = {}
+normalized_difference = {}
 for i in Isotopes:    
     chixs_fullpath = []
     chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/' +i+'.cxs')
-    #chixs_fullpath.append('../output/testing/XMAS_172/N14_n172.csx')
-    # chixs_fullpath.append('../output/testing/XMAS_172/H1_n172.csx')
     N_density = []
     N_density.append(1.)
     data = Utils_ChiTechCombiner.BuildCombinedChiTechData(chixs_fullpath, N_density)
@@ -35,8 +36,6 @@ for i in Isotopes:
     Utils_NjoySpectrumPlotter.Njoy_spectrum_plotter(outp, './')
 
     A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/'+i+'.txt')
-    # A = np.loadtxt('../output/testing/XMAS_172/mcnp_N14_flx_tally.txt')
-    # A = np.loadtxt('../output/testing/XMAS_172/mcnp_H1_flx_tally.txt')
     mcnpE = A[:,0]
     mcnpF = A[:,1] * 4e9
 
@@ -51,6 +50,14 @@ for i in Isotopes:
 
     E = np.asarray(E)
     F = np.asarray(F)
+    
+    ### this section I addeed
+    neutron_spectrum = outp[0][1] ### I added 
+    difference[i] = (F-neutron_spectrum)/F
+    F_norm = F/np.sum(F)
+    neutron_spectrum_norm = neutron_spectrum/np.sum(neutron_spectrum)
+    normalized_difference[i] = (F_norm-neutron_spectrum_norm)/F_norm
+    #F = F/np.sum(F)  ### I added
 
     fig_n = plt.gcf().number
     print(fig_n)
@@ -62,4 +69,5 @@ for i in Isotopes:
     ax_list[0].legend()
     ax_list[1].legend()
     plt.show()
-    plt.savefig(i+'.png')
+    plt.savefig(i+'_normalized.png')
+    print(E)

@@ -305,3 +305,12 @@ matxsr_data = EditMatrix('../njoy_outputs/tape41')
 # #T = np.diag(v_sig_t)
 # plt.matshow(np.log(S))
 # plt.title('Matxsr elastic scattering')
+
+# card 1
+# card 2
+# card 3
+# card 4
+# card 5
+# card 6
+# card 7
+# card 8

@@ -14,6 +14,7 @@ def GenerateSpectrumData(neutron_gs, psi, sigma_heat, gamma_gs=[]):
     #==================== Generate neutron spectrum data
     n_bndrys, n_vals = [], []
     n_heating = []
+    flux = []
     for g in range(G_neutron):
         gprime    = G_neutron - g - 1
         lo_bound  = neutron_gs[g][1]*1.0e-6
@@ -22,6 +23,9 @@ def GenerateSpectrumData(neutron_gs, psi, sigma_heat, gamma_gs=[]):
         spectrum  = psi[G_neutron-g-1] / bin_width
         n_bndrys += [lo_bound, hi_bound]
         n_vals   +=  [spectrum, spectrum]
+        
+        #######
+        flux.append(psi[G_neutron-g-1])
     
         #heating_spectrum  = sigma_heat[G_neutron-g-1]
         heating_spectrum  = sigma_heat[gprime]*spectrum
@@ -30,6 +34,7 @@ def GenerateSpectrumData(neutron_gs, psi, sigma_heat, gamma_gs=[]):
     n_bndrys = np.array(n_bndrys)
     n_vals   = np.array(n_vals)
     n_heating = np.array(n_heating)
+    n_flux = np.array(flux)
   
     #==================== Generate gamma spectrum data
     g_bndrys, g_vals = [], []
@@ -50,10 +55,10 @@ def GenerateSpectrumData(neutron_gs, psi, sigma_heat, gamma_gs=[]):
     g_vals   = np.array(g_vals)
     g_heating = np.array(g_heating)
   
-    return [(n_bndrys, n_vals), (g_bndrys, g_vals), (n_heating, g_heating)]
+    return [(n_bndrys, n_vals), (g_bndrys, g_vals), (n_heating, g_heating), n_flux]
 
 #====================================================================
-def InfiniteMediumSpectrum(data, source_def, plot=False):
+def InfiniteMediumSpectrum(data, source_def, dist_source, plot=False):
     neutron_gs = data["neutron_gs"]
     gamma_gs = data["gamma_gs"]
     sig_t = data["sigma_t"]
@@ -91,24 +96,24 @@ def InfiniteMediumSpectrum(data, source_def, plot=False):
     if source_def["energy"]=='fission':
         # Get the source term:
         if particle == "neutron":
-            src_term = create_source_spectrum(neutron_gs, 1., fission = True)
+            src_term = create_source_spectrum(neutron_gs, 1., dist_source, fission = True)
             for i in range (len(src_term)):
                 v_src[i] = src_term[i]
         else:
             raise Exception('for fission, particle must be neutron')
     else:
         if particle == "neutron":
-            src_term = create_source_spectrum(neutron_gs, source_def["energy"])
+            src_term = create_source_spectrum(neutron_gs, source_def["energy"], dist_source)
             for i in range (len(src_term)):
                 v_src[i] = src_term[i]
         elif particle == "gamma":
-            src_term = create_source_spectrum(gamma_gs  , source_def["energy"])
+            src_term = create_source_spectrum(gamma_gs  , source_def["energy"], dist_source)
             for i in range (len(src_term)):
                 index = i + len(neutron_gs)
                 v_src[index] = src_term[i]
         else:
             raise Exception('particle must be neutron or gamma')
-    print(v_src)        
+    #print(v_src)        
 
     v_psi = np.matmul(A_inv,v_src)
     # print("Norm spectrum: ")
@@ -120,7 +125,7 @@ def InfiniteMediumSpectrum(data, source_def, plot=False):
     return outp
 
 # ===================================================
-def create_source_spectrum(group_structure,myE,fission=False):
+def create_source_spectrum(group_structure,myE,dist_source, fission=False):
     #Convert to eV. myE must be entered in MeV
     myE *= pow(10,6)
 
@@ -166,6 +171,46 @@ def create_source_spectrum(group_structure,myE,fission=False):
         v_src = np.flip(v_src)
 
     v_src /= np.sum(v_src)
+    
+    ## if using the log distributed source format
+    if dist_source is True:
+        v_src = [2.02E-01,1.81E-02,1.14E-02,1.31E-02,1.43E-02,
+                  1.02E-02,7.88E-03,6.44E-03,5.45E-03,6.44E-03,
+                  6.16E-03,5.24E-03,5.10E-03,4.92E-03,1.35E-03,
+                  6.07E-03,1.81E-03,4.94E-03,5.40E-03,1.55E-03,
+                  4.72E-03,4.16E-03,1.72E-03,5.37E-03,4.23E-03,
+                  4.29E-03,2.44E-03,1.67E-03,6.13E-04,3.17E-03,
+                  3.91E-03,8.04E-04,2.80E-03,4.01E-03,1.08E-03,
+                  2.72E-03,5.16E-03,4.26E-03,3.57E-03,4.50E-04,
+                  2.59E-03,4.13E-04,2.00E-03,7.68E-04,7.52E-04,
+                  8.09E-04,5.05E-04,3.57E-04,8.41E-04,5.16E-04,
+                  3.40E-04,8.68E-04,8.47E-04,4.16E-04,4.85E-04,
+                  7.66E-04,6.09E-04,1.91E-03,1.81E-03,1.01E-03,
+                  8.48E-04,1.88E-03,7.26E-04,5.94E-04,2.06E-03,
+                  1.73E-03,1.75E-03,1.67E-03,1.69E-03,1.61E-03,
+                  1.37E-03,5.01E-04,3.62E-03,2.74E-03,6.86E-04,
+                  1.59E-03,6.17E-04,6.21E-03,8.54E-04,5.94E-03,
+                  1.12E-03,7.07E-03,2.06E-03,5.01E-03,7.07E-03,
+                  3.53E-03,3.53E-03,2.65E-03,4.42E-03,7.07E-03,
+                  5.30E-03,7.07E-03,5.30E-03,3.53E-03,3.53E-03,
+                  3.53E-03,3.53E-03,3.53E-03,2.65E-03,4.42E-03,
+                  2.06E-03,2.36E-03,2.65E-03,7.07E-03,3.83E-03,
+                  6.77E-03,1.41E-02,2.94E-03,1.12E-02,1.41E-02,
+                  7.07E-03,7.07E-03,1.41E-02,3.53E-03,7.07E-03,
+                  3.53E-03,7.07E-03,5.30E-03,1.77E-03,1.06E-02,
+                  3.53E-03,1.41E-02,1.77E-03,1.24E-02,3.53E-03,
+                  1.06E-02,7.07E-03,7.07E-03,1.06E-02,3.53E-03,
+                  1.41E-02,3.53E-03,2.36E-03,8.24E-03,3.53E-03,
+                  1.06E-02,7.07E-03,7.07E-03,1.06E-02,3.53E-03,
+                  1.41E-02,1.06E-02,3.53E-03,3.53E-03,1.06E-02,
+                  3.53E-03,3.53E-03,3.53E-03,3.53E-03,1.06E-02,
+                  3.53E-03,3.53E-03,3.53E-03,3.53E-03,3.53E-03,
+                  7.07E-03,7.07E-03,3.53E-03,3.53E-03,7.07E-03,
+                  7.07E-03,7.07E-03,7.07E-03,3.53E-03,3.53E-03,
+                  7.07E-03,7.07E-03,5.30E-03,6.18E-03,2.65E-03,
+                  5.30E-03,4.42E-03]
+        v_src.reverse()
+        v_src /= np.sum(v_src)
     return v_src
 
 #====================================================================

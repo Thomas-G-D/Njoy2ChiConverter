@@ -13,7 +13,7 @@ import Utils_Info
 import Utils_NjoySpectrumPlotter
 import matplotlib.pyplot as plt
 from collections import defaultdict
-impo
+import X5_Utils_MATXSR
 plt.close('all')
 
 
@@ -45,25 +45,8 @@ def assemble_data(filename, target_value, skip_number, multiplier):
     return Output_values
 
 chixs_fullpath = []
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/He3.cxs')
-# chixs_fullpath.append('../output/testing/XMAS_172/N14_n172.csx')
-# chixs_fullpath.append('../output/testing/XMAS_172/H1_n172.csx')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Ar40.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd106.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd108.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd110.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd111.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd112.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd113.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd114.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cd116.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Cu63.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Mn55.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Ti48.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Zn64.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Zn67.cxs')
-# chixs_fullpath.append('../../outputs/ENDF-B-VIII-0/172gxs/CXS/Zn68.cxs')
-chixs_fullpath.append('Fe56.cxs')
+
+chixs_fullpath.append('Fe56sab.cxs')
 N_density = []
 N_density.append(1.)
 data = Utils_ChiTechCombiner.BuildCombinedChiTechData(chixs_fullpath, N_density)
@@ -79,27 +62,78 @@ outp = Utils_Info.InfiniteMediumSpectrum(data, source_def, plot=True)
 
 Utils_NjoySpectrumPlotter.Njoy_spectrum_plotter(outp, './')
 
+matxsr_data = X5_Utils_MATXSR.EditMatrix('tape41')
+for p in range(8):
+    data['transfer_matrices'][p] = matxsr_data['transfer_mat_sab'][:,:,p]
+#matxsr_data['energy_bins'].append(0)
+matxsr_data['energy_bins'].reverse()
+n_bndrys = []
+for grp in range(172):
+    lo_bound  = matxsr_data['energy_bins'][grp]#*1.0e-6
+    hi_bound  = matxsr_data['energy_bins'][grp+1]#*1.0e-6
+    bin_width = hi_bound-lo_bound
+    spectrum  = matxsr_data['nwt0'][grp]/ bin_width
+    n_bndrys.append([float(grp), lo_bound, hi_bound])
+    #n_vals   +=  [spectrum, spectrum]
+data['neutron_gs'] = n_bndrys  
+data['sigma_t'] = matxsr_data['ntot0']
+outp2 = Utils_Info.InfiniteMediumSpectrum(matxsr_data, source_def, plot=False)
+
+
+matxsr_data2 = X5_Utils_MATXSR.EditMatrix('tape41')
+for p in range(8):
+    data['transfer_matrices'][p] = matxsr_data['transfer_mats'][:,:,p]
+#matxsr_data['energy_bins'].append(0)
+matxsr_data2['energy_bins'].reverse()
+n_bndrys2 = []
+for grp in range(172):
+    lo_bound  = matxsr_data2['energy_bins'][grp]#*1.0e-6
+    hi_bound  = matxsr_data2['energy_bins'][grp+1]#*1.0e-6
+    bin_width = hi_bound-lo_bound
+    spectrum  = matxsr_data2['nwt0'][grp]/ bin_width
+    n_bndrys2.append([float(grp), lo_bound, hi_bound])
+    #n_vals   +=  [spectrum, spectrum]
+data['neutron_gs'] = n_bndrys2  
+data['sigma_t'] = matxsr_data2['ntot0']
+outp3 = Utils_Info.InfiniteMediumSpectrum(data, source_def, plot=False)
+
+#n_bndrys = np.array(n_bndrys)
+#n_vals = np.array(n_vals)
+
+neutron_group_bndries = outp2[0][0]
+neutron_spectrum = outp2[0][1]
+# gamma_group_bndries = outp[1][0]
+# gamma_spectrum = outp[1][1]
+# neutron_heating_spectrum = outp[2][0]
+# gamma_heating_spectrum = outp[2][1]
+
+#========================== Compute the heating rate for njoy
+# for i in range (0, len(neutron_heating_spectrum)):
+#   neutron_heating_spectrum[i] *= neutron_spectrum[i]
+# for i in range (0, len(gamma_heating_spectrum)):
+#   gamma_heating_spectrum[i] *= gamma_spectrum[i]
+#================================= Plot energy spectrum
+#================================= Flux
+#neutron_spectrum = neutron_spectrum/np.sum(neutron_spectrum)  ### I added
 
 
 
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/He3.txt')
-# A = np.loadtxt('../output/testing/XMAS_172/mcnp_N14_flx_tally.txt')
-# A = np.loadtxt('../output/testing/XMAS_172/mcnp_H1_flx_tally.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Ar40_low.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd106mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd108mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd110mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd111mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd112mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd113mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd114mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cd116mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Cu63mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Mn55mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Ti48mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Zn64mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Zn67mid.txt')
-# A = np.loadtxt('../../outputs/ENDF-B-VIII-0/172gxs/MCNP/Zn68mid.txt')
+
+
+
+
+fig_n = plt.gcf().number
+fig = plt.figure(fig_n)
+ax_list = fig.axes
+print(ax_list)
+ax_list[0].semilogy(neutron_group_bndries, neutron_spectrum, label = 'matxsr sab')
+ax_list[1].loglog(neutron_group_bndries, neutron_spectrum, label = 'matxsr sab')
+ax_list[0].semilogy(outp3[0][0], outp3[0][1], label = 'matxsr free')
+ax_list[1].loglog(outp3[0][0], outp3[0][1], label = 'matxsr free')
+plt.legend()
+#plt.show()
+#plt.savefig('Fe56_sab_noMCNP.png')
+
 MCNP_filename = 'Fe56XSout.txt'
 
 
@@ -171,4 +205,19 @@ ax_list[0].semilogy(E, F, label='mcnp')
 ax_list[1].loglog(E, F, label='mcnp')
 plt.legend()
 plt.show()
-plt.savefig('Zn70mid.png')
+#plt.savefig('Fe56_sab.png')
+
+matxsr_diff = (outp2[0][1]-F)/outp2[0][1]
+matxsr_diff_free = (outp3[0][1]-F)/outp3[0][1]
+old_diff = (outp[0][1]-F)/outp[0][1]
+plt.figure()
+plt.semilogx(E,matxsr_diff, c = 'C1', label = 'matxsr sab')
+plt.semilogx(E,matxsr_diff_free, c = 'C2', label = 'matxsr free')
+plt.semilogx(E,old_diff, c = 'C0',label = 'CXS')
+plt.yscale('symlog')
+plt.grid()
+plt.xlabel('energy')
+plt.ylabel('relative difference')
+plt.title('Relative difference of njoy vs mcnp')
+plt.legend()
+#plt.savefig('differencesloglog.png')

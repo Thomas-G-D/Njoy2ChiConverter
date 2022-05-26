@@ -13,7 +13,7 @@ import Utils_Info
 import Utils_NjoySpectrumPlotter
 import matplotlib.pyplot as plt
 from collections import defaultdict
-import X8_Utils_MATXSR as matxsr  ### 9 is not currently compatible
+import X11_Utils_MATXSR_w_gamma as matxsr  ### 9 is not currently compatible
 plt.close('all')
 
 
@@ -104,7 +104,7 @@ for iso in range(len(filename)):
     
     ###############################################
     chitech = {}
-    chioutfile = open(filename[iso]+'.co',"r")
+    chioutfile = open(filename[iso]+'.cxs',"r")
     line = chioutfile.readline()
     words = line.split()
     G=172
@@ -122,7 +122,7 @@ for iso in range(len(filename)):
     #%% This section is for CXS and MATXSR
     ## add a path to the CXS file
     chixs_fullpath = []
-    chixs_fullpath.append('../5_9 meeting/NJOY_files/'+filename[iso]+'.cxs')
+    chixs_fullpath.append('../5_9 meeting/NJOY_files/'+filename[iso]+'.co')
     
     ## add the information needed to assemble the information from the CXS file into a dictionary
     N_density = []
@@ -130,7 +130,7 @@ for iso in range(len(filename)):
     data = Utils_ChiTechCombiner.BuildCombinedChiTechData(chixs_fullpath, N_density) # dictionary of cxs information
     
     ## assemble information from matxsr file
-    matxsr_data = matxsr.EditMatrix('../5_9 meeting/NJOY_files/tape41_'+filename[iso]) # dictionary of matxsr information
+    matxsr_data, prob = matxsr.EditMatrix('../5_9 meeting/NJOY_files/tape41_'+filename[iso]) # dictionary of matxsr information
     
     ## build the source term
     source_def = {}                                # initialize

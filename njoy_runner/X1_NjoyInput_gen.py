@@ -1,9 +1,109 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 16 09:26:41 2022
+
+@author: tdeguire
+"""
 '''Prepares input/output files for NJOY2016 and executes NJOY2016/2021'''
 import sys 
 import argparse
 from argparse import RawTextHelpFormatter
 import os
 
+def set_neutron_gs(neutron_group_structure):
+  neutron_gs = 0
+  given_gs = neutron_group_structure
+  if given_gs == 2:
+    neutron_gs = 239
+  elif given_gs == 3:
+    neutron_gs = 30 
+  elif given_gs == 4:
+    neutron_gs = 27
+  elif given_gs == 5:
+    neutron_gs = 50
+  elif given_gs == 6:
+    neutron_gs = 68
+  elif given_gs == 7:
+    neutron_gs = 100
+  elif given_gs == 8:
+    neutron_gs = 35
+  elif given_gs == 9:
+    neutron_gs = 69
+  elif given_gs == 10:
+    neutron_gs = 187
+  elif given_gs == 11:
+    neutron_gs = 70
+  elif given_gs == 12:
+    neutron_gs = 620
+  elif given_gs == 13:
+    neutron_gs = 80
+  elif given_gs == 14:
+    neutron_gs = 100
+  elif given_gs == 15:
+    neutron_gs = 640
+  elif given_gs == 16:
+    neutron_gs = 174
+  elif given_gs == 17:
+    neutron_gs = 175
+  elif given_gs == 18:
+    neutron_gs = 172 ### not sure this is right
+  elif given_gs == 19:
+    neutron_gs = 33
+  elif given_gs == 20:
+    neutron_gs = 1968
+  elif given_gs == 21:
+    neutron_gs = 315
+  elif given_gs == 22:
+    neutron_gs = 172
+  elif given_gs == 23:
+    neutron_gs = 175
+  elif given_gs == 24:
+    neutron_gs = 281
+  elif given_gs == 25:
+    neutron_gs = 295
+  elif given_gs == 26:
+    neutron_gs = 361
+  elif given_gs == 27:
+    neutron_gs = 315
+  elif given_gs == 28:
+    neutron_gs = 89
+  elif given_gs == 29:
+    neutron_gs = 660
+  elif given_gs == 30:
+    neutron_gs = 1025
+  elif given_gs == 31:
+    neutron_gs = 1067
+  elif given_gs == 32:
+    neutron_gs = 1102
+  elif given_gs == 33:
+    neutron_gs = 142
+  elif given_gs == 34:
+    neutron_gs = 618
+  return neutron_gs
+
+def set_gamma_gs(gamma_group_structure):
+  gamma_gs = 0
+  given_gs = gamma_group_structure
+  if given_gs == 2:
+    gamma_gs = 94
+  elif given_gs == 3:
+    gamma_gs = 12 
+  elif given_gs == 4:
+    gamma_gs = 21
+  elif given_gs == 5:
+    gamma_gs = 22
+  elif given_gs == 6:
+    gamma_gs = 48
+  elif given_gs == 7:
+    gamma_gs = 24
+  elif given_gs == 8:
+    gamma_gs = 36
+  elif given_gs == 9:
+    gamma_gs = 38
+  elif given_gs == 10:
+    gamma_gs = 42
+
+  return gamma_gs
 # ===================================== Check python version
 if sys.version_info[0] < 3:
     print("\n Error: This script requires python3 but was executed "
@@ -176,7 +276,10 @@ argparser.add_argument("--custom_neutron_wt_file",
                        default="")   
 argparser.add_argument("--custom_gamma_wt_file",
                        help="Custom gamma weight function file path.",
-                       default="")                                                                                                                                     
+                       default="")
+argparser.add_argument("--matxsr_huse",
+                       help="user ID for matxsr output.",
+                       default="unknown")                                                                                                                                          
 
 args = argparser.parse_args()
 
@@ -568,6 +671,38 @@ if args.path_to_gamma_endf != "":
 # ===================================== Convert gaminr output to ASCII
     njoy_input.write("moder\n")
     njoy_input.write("-55 56/\n")
+    
+njoy_input.write("matxsr\n")
+if args.path_to_gamma_endf != "":
+  njoy_input.write("-30 -55 41/\n") 
+else:
+  njoy_input.write("-30 0 41/\n") 
+njoy_input.write("0 '"+args.matxsr_huse+"'/\n")    ### see if this should be 1
+if args.path_to_gamma_endf != "":
+  njoy_input.write("2 4 2 1\n")    # npart, ntype, nholl, nmat
+else:
+  njoy_input.write("1 2 2 1\n")    # npart, ntype, nholl, nmat
+njoy_input.write("'"+args.matxsr_huse+" from ENDF/B-VIII.0'/\n")    # first hsteid
+njoy_input.write("'Processed by NJOY21'/\n")    # second hsteid
+if args.path_to_gamma_endf != "":
+  njoy_input.write("'n' 'g'/\n")
+else:
+  njoy_input.write("'n' /\n")
+
+if args.path_to_gamma_endf != "":
+  neutron_gs = set_neutron_gs(args.neutron_group_structure)
+  gamma_gs = set_gamma_gs(args.gamma_group_structure)
+  njoy_input.write(str(neutron_gs)+' '+str(gamma_gs)+"\n")
+  njoy_input.write("'nscat' 'ntherm' 'ng' 'gscat' / \n")
+  njoy_input.write("1 1 1 2/\n")
+  njoy_input.write("1 1 2 2/\n")
+else:
+  neutron_gs = set_neutron_gs(args.neutron_group_structure)
+  njoy_input.write(str(neutron_gs)+"\n")
+  njoy_input.write("'nscat' 'ntherm' / \n")
+  njoy_input.write("1 1/\n")
+  njoy_input.write("1 1/\n")
+njoy_input.write("'"+args.matxsr_huse+"' "+str(material_number)+"/\n")
 
 njoy_input.write("stop\n")
 njoy_input.close()
@@ -576,14 +711,16 @@ njoy_input.close()
 # ===================================== Run NJOY
 # remove output file
 os.system('rm -f output')
+args.njoy_exec_name = 'njoy21' ########## I added look into this
 if args.njoy_exec_name == "njoy21":
-   cmd_line = args.njoy_exec_name + " -i NJOY_INPUT.txt -o output"    #### I added the _2
-   #cmd_line = args.njoy_exec_name + " -i NJOY_INPUT_Fe56sab.txt -o output" 
+    cmd_line = args.njoy_exec_name + " -i NJOY_INPUT.txt -o output"    #### I added the _2
+    #cmd_line = args.njoy_exec_name + " -i NJOY_INPUT_10.txt -o output" 
 else:
     cmd_line = args.njoy_exec_name  + " < NJOY_INPUT.txt"
 print('command line =',cmd_line)
 
 os.system(cmd_line)
+
 #os.system("rm tape*")  ### I undid this 
 
 if not os.path.isdir(args.output_directory):
@@ -596,6 +733,9 @@ if args.output_directory[-1] != "/":
 
 print("Copying outputfile to "+args.output_directory+forward_slash+output_filename)
 
+os.system("cp tape41 "+args.output_directory+forward_slash+'tape41_'+args.matxsr_huse)
 os.system("cp output "+args.output_directory+forward_slash+output_filename)
 # os.system("pwd")
 # os.system("cp NJOY_INPUT.txt "+args.output_directory+"NJOY_INPUT.txt")
+
+

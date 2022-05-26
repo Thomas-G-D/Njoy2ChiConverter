@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 16 09:26:41 2022
+
+@author: tdeguire
+"""
 '''Prepares input/output files for NJOY2016 and executes NJOY2016/2021'''
 import sys 
 import argparse
@@ -176,7 +182,10 @@ argparser.add_argument("--custom_neutron_wt_file",
                        default="")   
 argparser.add_argument("--custom_gamma_wt_file",
                        help="Custom gamma weight function file path.",
-                       default="")                                                                                                                                     
+                       default="")
+argparser.add_argument("--matxsr_huse",
+                       help="user ID for matxsr output.",
+                       default="unknown")                                                                                                                                          
 
 args = argparser.parse_args()
 
@@ -568,6 +577,19 @@ if args.path_to_gamma_endf != "":
 # ===================================== Convert gaminr output to ASCII
     njoy_input.write("moder\n")
     njoy_input.write("-55 56/\n")
+    
+njoy_input.write("matxsr\n")
+njoy_input.write("-30 0 41/\n") ### edit this line based on gamminar
+njoy_input.write("0 '"+args.matxsr_huse+"'/\n")    ### see if this should be 1
+njoy_input.write("1 2 2 1\n")    # npatr, ntype, nholl, nmat
+njoy_input.write("'"+args.matxsr_huse+" from ENDF/B-VIII.0'/\n")    # first hsteid
+njoy_input.write("'Processed by NJOY21'/\n")    # second hsteid
+njoy_input.write("'n' /\n")
+njoy_input.write("172\n")
+njoy_input.write("'nscat' 'ntherm' / \n")
+njoy_input.write("1 1/\n")
+njoy_input.write("1 1/\n")
+njoy_input.write("'"+args.matxsr_huse+"' "+str(material_number)+"/\n")
 
 njoy_input.write("stop\n")
 njoy_input.close()
@@ -576,14 +598,16 @@ njoy_input.close()
 # ===================================== Run NJOY
 # remove output file
 os.system('rm -f output')
+args.njoy_exec_name = 'njoy21' ########## I added look into this
 if args.njoy_exec_name == "njoy21":
-   cmd_line = args.njoy_exec_name + " -i NJOY_INPUT.txt -o output"    #### I added the _2
-   #cmd_line = args.njoy_exec_name + " -i NJOY_INPUT_Fe56sab.txt -o output" 
+    cmd_line = args.njoy_exec_name + " -i NJOY_INPUT.txt -o output"    #### I added the _2
+    #cmd_line = args.njoy_exec_name + " -i NJOY_INPUT_10.txt -o output" 
 else:
     cmd_line = args.njoy_exec_name  + " < NJOY_INPUT.txt"
 print('command line =',cmd_line)
 
 os.system(cmd_line)
+
 #os.system("rm tape*")  ### I undid this 
 
 if not os.path.isdir(args.output_directory):
@@ -596,6 +620,8 @@ if args.output_directory[-1] != "/":
 
 print("Copying outputfile to "+args.output_directory+forward_slash+output_filename)
 
+os.system("cp tape41 "+args.output_directory+forward_slash+'tape41_'+args.matxsr_huse)
 os.system("cp output "+args.output_directory+forward_slash+output_filename)
 # os.system("pwd")
 # os.system("cp NJOY_INPUT.txt "+args.output_directory+"NJOY_INPUT.txt")
+

@@ -14,16 +14,16 @@ def pad_or_truncate(given_list, target_len):
 
 def EditMatrix(file):
     
-    
+    #%% initialize values
     matxsr_data = {} # initialize dictionary to hold xs data
     
-    matxsr_data["sigma_t"]         = [] # done
-    matxsr_data["sigma_a"]         = [] # maybe done
-    matxsr_data["sigma_s"]         = [] # done
-    matxsr_data["sigma_f"]         = [] # done
-    matxsr_data["sigma_heat"]      = [] # done
-    
-    ########## still have no idea on these
+    ## these dictionary entries are initialized to make the output
+    ## of this file compatible with other files in the Njoy2ChiTech repo
+    matxsr_data["sigma_t"]         = [] 
+    matxsr_data["sigma_a"]         = [] 
+    matxsr_data["sigma_s"]         = [] 
+    matxsr_data["sigma_f"]         = [] 
+    matxsr_data["sigma_heat"]      = [] 
     matxsr_data["nu_total"]        = []
     matxsr_data["nu_prompt"]       = []
     matxsr_data["nu_delayed"]      = []
@@ -31,32 +31,20 @@ def EditMatrix(file):
     matxsr_data["chi_delayed"]     = []
     matxsr_data["decay_constants"] = []
     matxsr_data["gamma"]           = []
-    
-    #############
-    matxsr_data["inv_velocity"]    = [] # done
-
-    matxsr_data["transfer_matrices"] = [] # done
-    matxsr_data["transfer_matrices_sparsity"] = [] # done
-
-    matxsr_data["neutron_gs"] = [] # done
+    matxsr_data["inv_velocity"]    = [] 
+    matxsr_data["transfer_matrices"] = []
+    matxsr_data["transfer_matrices_sparsity"] = [] 
+    matxsr_data["neutron_gs"] = []
     matxsr_data["gamma_gs"]   = []
-    matxsr_data['test_sig_s'] = np.zeros(172)
-    
-    
-    
-    
-    
-    
-    # n_to_n_transfer_initialize = False
-    # g__to_g_transfer_initialize = False
-    # n_to_g_transfer_initialize = False
+
+    ## open the matxsr run tape and initialize variables used to read it
     cf = open(file, 'r') # tape[i]
     structure = []   # initialize list to determine matxsr structure
     xs_matrix = []   # initialize list to contain elastic scattering information
     last_line = []   # initialize a list for containg lines at end of a specific xs
+    data_type = 0    # initialize the data type variable 0 indicates the first data type
+    blocks_initialized = False # initalize the blocks variable
     last_line.append('start') # need this variable initialized to prevent error
-    data_type = 0    # initialize the data type variable
-    blocks_initialized = False
     
     ## this loop goes over every line in the file and assembles the data into a dictionary
     for line in cf:
@@ -69,7 +57,7 @@ def EditMatrix(file):
         if line.find('1d') != -1:             # read card 1
             
             card_1         = line.split()     # card 1 information
-            particle_types = int(card_1[1])        # type of particle
+            particle_types = int(card_1[1])   # type of particle
             data_types     = int(card_1[2])   # number of data types
             num_blocks     = int(card_1[-1])  # number of blocks of code
             
@@ -77,37 +65,59 @@ def EditMatrix(file):
         #%% read out information about the data types from card 3
         if line.find('3d') != -1:
             
-            card_3          = line.split()
-            particle_names = []
+            card_3         = line.split()  # put the info from card 3 into a variable
+            
+            ## this loop is used to extract the names of the particle types 
+            ## contained in the matxsr file in the card 3 information
+            particle_names = []            
             for i in range(particle_types):
                 particle_names.append(card_3[1+i])
-            data_type_names = []                         # initialize name of the data types 
+                # the first entry on card_3 will be '3d' followed by particle types
             
+            ## this loop is used to extract the names of the data types 
+            ## contained in the matxsr file in the card 3 information
+            data_type_names = []                         # initialize name of the data types 
             for i in reversed(range(data_types)):
                 data_type_names.append(card_3[-(2+i)])   # extract names of data types from text
-            ### want to read out until 3d but not sure how everything works yet if multiple particles!!!
-            ### want to read out number energy groups from here
-            structure_line = card_3
+                # the last entry is the name of the material
+                # right before the last entry are the data types
+                
+            ## this loop extract information regrading the structure of the 
+            ## data types and particle types. It reads until it reaches the 4d data card
+            structure_line = card_3                     # initialize the varible with card_3
             while (structure_line[0] != '4d'):          # while still reading structure 
                 structure_line = cf.readline().split()  # read structure line
                 structure.append(structure_line)        # add to structure variable
-            last_line    = structure[-1]
-            structure    = structure[:-1]   # remove the last line that contains 5d, one line too far read by while loop
-            struc_info     = [info for sublist in structure for info in sublist] # read structure into one list
             
-            energy_groups = []
-            for i in range(particle_types):
-                energy_groups.append(int(struc_info[i]))
-            initial_particle = []
-            final_particle = []
+            last_line  = structure[-1]    # save the last line as it is the first line for the next data card
+            structure  = structure[:-1]   # remove the last line that contains 5d, one line too far read by while loop
+            struc_info = [info for sublist in structure for info in sublist] # read structure into one list
+            
+            ## this loop extracts and saves the number of energy groups for
+            ## each particle
+            energy_groups = []                            # initialize variable
+            for i in range(particle_types):               # loop over number of particles
+                energy_groups.append(int(struc_info[i]))  # extract group info
+                # the energy groups entries are the first entries on the second line of the 3rd data card
+                
+            ## this loop extracts and saves information regarind the initial particle type
+            ## and final particle type for each of the data types (i.e. n to n, n to g, g to g)
+            initial_particle = []    # initialize variable
+            final_particle   = []    # initialize variable
             for i in range(len(data_type_names)):
                 initial_particle.append(int(struc_info[particle_types+i]))
                 final_particle.append(int(struc_info[particle_types+len(data_type_names)+i]))
-                
-            transfer_keys = {}
+                # the initial particle entries follow the energy groups; there is one entry for each data type
+                # the final particle entries follow the initial particle entries; there is one entry for each data type
+            
+            ## this loop initializes a dictionary variable which is used to track
+            ## the particle transfer types (i.e. n to n, n to g) which will need
+            ## to be known later to build the transfer matrices
+            transfer_keys = {}   # initalize dictionary
             for part_in in range(len(initial_particle)):
-                # transfer_keys.append(particle_names[initial_particle[part_in]-1]+'_to_'+particle_names[final_particle[part_in]-1])
+                # make a sub-dictionary for each data type transfer
                 transfer_keys[particle_names[initial_particle[part_in]-1]+'_to_'+particle_names[final_particle[part_in]-1]] = {}
+                # remove any duplicate transfer types
                 for dat_typ in range(len(data_type_names)):
                     transfer_keys[particle_names[initial_particle[part_in]-1]+'_to_'+particle_names[final_particle[part_in]-1]][data_type_names[dat_typ]] = []
 
